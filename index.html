@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>우주쓰레기 감지 프레임워크</title>
+  <link rel="stylesheet" href="style.css?v=20261029g">
+</head>
+<body>
+<header>
+  <h1 id="title"></h1>
+  <p class="sub" id="subtitle"></p>
+  <div class="status" id="status"><span class="dot"></span><span id="statusText">모델 불러오는 중…</span></div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>📷 ① 사진 올리기</h2>
+    <div class="stage" id="stage">
+      <canvas id="view" hidden></canvas>
+      <div class="placeholder" id="placeholder">사진을 여기로 끌어다 놓거나,<br>아래 버튼·예시 사진을 눌러보세요.</div>
+    </div>
+    <div class="row">
+      <label class="btn" for="file">사진 고르기</label>
+      <input id="file" type="file" accept="image/*" hidden>
+      <button id="btnWhole" disabled>사진 전체로 판별</button>
+      <span class="note">사진은 이 브라우저 안에서만 처리돼요. 서버로 전송되지 않아요.</span>
+    </div>
+    <div class="row mode">
+      <span class="note">박스는 누가 정할까요?</span>
+      <label class="radio"><input type="radio" name="mode" value="human" checked> ✍️ 내가 그리기</label>
+      <label class="radio" id="modeAiLabel"><input type="radio" name="mode" value="ai" id="modeAi"> 🤖 AI가 찾기</label>
+    </div>
+    <div class="hint" id="hint">사진을 올린 뒤, 물체 둘레를 마우스로 드래그해서 박스를 그려주세요.</div>
+    <div class="row"><span class="note">예시 사진 (눌러보세요):</span></div>
+    <div class="examples" id="examples"></div>
+  </section>
+
+  <section class="card">
+    <h2>🧩 프레임워크가 일하는 순서</h2>
+    <div class="flow">
+      <span class="chip" id="c0">사진</span>→<span class="chip" id="c1">① 위치 정하기</span>→
+      <span class="chip" id="c2">② 종류 판별</span>→<span class="chip" id="c3">③ 판정 규칙</span>→<span>결과</span>
+    </div>
+    <div class="step">
+      <h3>① 위치 정하기 <span class="ms" id="ms1"></span></h3>
+      <div class="body" id="b1">내가 그리거나(✍️) AI가 찾은(🤖) 박스로 물체의 위치를 정해요.</div>
+    </div>
+    <div class="step">
+      <h3>② 종류 판별 <span class="ms" id="ms2"></span></h3>
+      <div class="body" id="b2">박스 안을 오려서 11개 클래스 중 무엇인지 맞혀요.</div>
+    </div>
+    <div class="verdict" id="verdict">
+      <div class="t" id="vt">③ 판정 결과</div>
+      <div id="vm">사진을 올리면 내가 정한 규칙으로 판정해요.</div>
+      <div class="r" id="vr"></div>
+    </div>
+  </section>
+
+  <section class="card full" id="codelab">
+    <h2>🧑‍💻 코드 실험실 🐍 — ③ 판정 규칙을 내가 직접 파이썬으로 코딩해요</h2>
+    <p class="note">아래 파이썬 <code>judge</code> 함수가 이 서비스의 최종 판정을 정해요. 미션을 하나씩 깨면서 내 판정 규칙을 완성해보세요.
+      <b>▶ 실행</b>을 누르면 내 코드가 실제 서비스에 들어가요. (단축키: Ctrl + Enter)</p>
+    <div class="missions" id="missions"></div>
+    <div class="goal" id="goal"></div>
+    <div class="lab">
+      <div>
+        <div class="editor-wrap">
+          <div class="gutter" id="gutter">1</div>
+          <textarea id="code" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="judge 함수 파이썬 코드"></textarea>
+        </div>
+        <div class="row">
+          <button class="primary" id="btnRun">▶ 실행</button>
+          <button id="btnTest">🧪 테스트만</button>
+          <button id="btnCodeReset">↺ 처음 코드로</button>
+          <button id="btnCodeSave">💾 코드 내려받기</button>
+        </div>
+      </div>
+      <div>
+        <label class="radio"><input type="checkbox" id="useCode"> 서비스 판정을 <b>내 코드</b>로 하기</label>
+        <div class="console" id="console"><div class="t">콘솔</div>코드를 쓰고 ▶ 실행을 눌러보세요.</div>
+        <details class="hint2" id="hintBox"><summary>💡 힌트 보기</summary><div id="hintBody"></div></details>
+        <details class="hint2"><summary>📖 kind 에 들어올 수 있는 값</summary><div id="kindList" class="note"></div></details>
+      </div>
+    </div>
+    <div class="tests" id="tests"></div>
+    <div class="mytest">
+      <span>🔎 직접 시험해보기:</span>
+      kind <select id="tKind"></select>
+      confidence <input type="number" id="tConf" value="85" min="0" max="100">
+      box_percent <input type="number" id="tBox" value="15" min="0" max="100" step="0.1">
+      <button id="btnMyTest">확인</button>
+      <span>→ 내 코드의 답: <span class="out" id="tOut">-</span></span>
+    </div>
+  </section>
+
+  <section class="card full">
+    <h2>⚙️ 코드 없이 정하는 규칙 (기본값) <span class="note" id="rulesNote"></span></h2>
+    <div class="grid2">
+      <div>
+        <label for="conf">AI 확신도 기준: <b id="confVal"></b> <span class="note">(이보다 낮으면 "사람이 확인")</span></label>
+        <input type="range" id="conf" min="0.3" max="0.99" step="0.01">
+        <label><input type="checkbox" id="checkBox"> 찾은 박스가 이상하게 작거나 크면 의심하기</label>
+        <div class="grid2">
+          <div><label for="minArea">너무 작음 (사진 대비 %)</label><input type="text" id="minArea"></div>
+          <div><label for="maxArea">너무 큼 (사진 대비 %)</label><input type="text" id="maxArea"></div>
+        </div>
+        <label>클래스별 경고 수준</label>
+        <div class="levels" id="levels"></div>
+        <p class="note">정보 = 초록, 주의 = 노랑, 경고 = 빨강. 확신이 낮거나 박스가 의심스러우면 수준과 상관없이 "사람 확인"이 먼저 적용돼요.</p>
+      </div>
+      <div>
+        <label for="tTitle">웹페이지 이름</label><input type="text" id="tTitle">
+        <label for="tSub">소개 문장</label><input type="text" id="tSub">
+        <label for="tAuthor">만든 사람</label><input type="text" id="tAuthor">
+        <label for="mInfo">정보 문구</label><input type="text" id="mInfo">
+        <label for="mWarn">주의 문구</label><input type="text" id="mWarn">
+        <label for="mAlert">경고 문구</label><input type="text" id="mAlert">
+        <label for="mReview">사람 확인 문구</label><input type="text" id="mReview">
+        <div class="row">
+          <button id="btnSave">내 설정 내려받기(JSON)</button>
+          <label class="btn" for="fileSettings">설정 불러오기</label><input id="fileSettings" type="file" accept="application/json" hidden>
+          <button id="btnReset">처음 설정으로</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card full">
+    <h2>⚠️ 한계 안내 (모델 카드)</h2>
+    <p class="note">이 도구를 처음 보는 사람이 "이거 믿어도 돼요?"라고 물을 때 대답이 되는 글이에요. 내가 실험으로 알게 된 한계를 내 말로 적어보세요.</p>
+    <textarea id="tCard"></textarea>
+    <h3 style="margin:14px 0 6px;font-size:14px;">미리보기</h3>
+    <div class="pre" id="cardView"></div>
+  </section>
+</main>
+
+<footer>
+  <div>만든 사람: <span id="fAuthor"></span></div>
+  <div>학습 데이터: Roboflow Universe 'Space Debris and Satellite' (CC BY 4.0) — Kaggle <i>muhammadzakria2001/space-debris-detection-dataset-for-yolov8</i> (MIT) 경유. 모두 컴퓨터로 만든 합성 이미지예요.</div>
+  <div>브라우저에서 AI를 실행하는 데 <a href="https://github.com/microsoft/onnxruntime" target="_blank" rel="noopener">ONNX Runtime Web</a>(MIT), 파이썬을 실행하는 데 <a href="https://pyodide.org" target="_blank" rel="noopener">Pyodide</a>(MPL-2.0)를 사용해요.</div>
+</footer>
+
+<script src="ort/ort.wasm.min.js"></script>
+<script src="py/pyodide.js"></script>
+<script src="config.js?v=20261029g"></script>
+<script src="app.js?v=20261029g"></script>
+</body>
+</html>
